@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UniHL7 Message Normalizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#f6f4ff;--card:#fff;--ink:#3f3f4f;--head:#5b4fa0;--lab:#6455a3;--mute:#7c7a8c;--line:#e8e4f4;--row:#f9f9fb;
+--g1:#a5b8f3;--g2:#7f6fe0;--red:#e74c3c;--okbg:#f0fbf3;--ok:#1f8a3f;--okbar:#4cae6a;--wbg:#fff6dc;--w:#8a5a00;--cbg:#ffe4e1;--c:#b3261e;--lowbg:#e3efff;--low:#1d4f91;--code:#2f2a4a;--codebg:#f4f2fb}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.55 Poppins,"Segoe UI",Calibri,Arial,sans-serif;min-height:100vh;position:relative;overflow-x:hidden}
+.dot{position:fixed;border-radius:50%;z-index:0;pointer-events:none}
+.d1{width:120px;height:120px;background:#e9f1ff;top:38%;left:-60px}
+.d2{width:110px;height:110px;background:#fbf4de;top:22%;right:-40px}
+.d3{width:150px;height:150px;background:#e9f6ee;bottom:6%;right:-50px}
+.d4{width:80px;height:80px;background:#e9f1ff;bottom:18%;left:8%}
+main{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:16px 16px 12px}
+.card{background:var(--card);border-radius:22px;padding:34px 36px 38px;box-shadow:0 12px 36px rgba(100,85,163,.13)}
+@media(max-width:560px){.card{padding:24px 16px 28px}}
+h1{color:var(--head);font-size:2rem;font-weight:700;text-align:center;margin:6px 0 8px}
+.sub{text-align:center;color:var(--mute);margin:0 auto 26px;max-width:640px}
+h2{color:var(--head);font-size:1.12rem;font-weight:600;margin:28px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+label{display:block;font-weight:600;font-size:.88rem;margin:18px 0 8px}
+input[type=file],textarea{width:100%;border:1px solid #dcd8ea;border-radius:14px;background:#fff;color:var(--ink);padding:12px 14px;font:inherit}
+textarea{min-height:200px;font:12.5px/1.5 Consolas,"Courier New",monospace;resize:vertical;white-space:pre}
+input:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--g2);outline-offset:2px}
+.btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+.btn{border:0;border-radius:99px;color:#fff;font:600 .88rem/1 Poppins,"Segoe UI",Arial,sans-serif;padding:15px 32px;cursor:pointer;transition:transform .12s,filter .12s}
+.btn:hover{transform:translateY(-1px);filter:brightness(.97)}
+.btn.go{background:linear-gradient(90deg,var(--g1),var(--g2));box-shadow:0 8px 18px rgba(127,111,224,.35)}
+.btn.clr{background:var(--red);box-shadow:0 8px 18px rgba(231,76,60,.3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.chip{border:1px solid #dcd8ea;background:#faf9ff;color:var(--lab);border-radius:99px;padding:6px 14px;font:500 .78rem/1.2 Poppins,"Segoe UI",Arial,sans-serif;cursor:pointer}
+.chip:hover{background:#efebff;border-color:var(--g2)}
+.chip.badc{color:var(--c);border-color:#f0c8c4;background:#fff7f6}
+.hint{font-size:.78rem;color:var(--mute);margin:8px 2px 0}
+table{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:4px}
+th{background:var(--lab);color:#fff;font-weight:600;font-size:.8rem;padding:9px 12px;text-align:left}
+td{padding:9px 12px;border-bottom:1px solid #f0eef6;background:var(--row);vertical-align:top;overflow-wrap:anywhere}
+table.kv th{width:34%;text-align:center;border-bottom:1px solid rgba(255,255,255,.18)}
+.scroll{overflow-x:auto}
+.scroll table:not(.kv){min-width:440px}
+.tag{white-space:nowrap;display:inline-block;padding:0 9px;margin-left:6px;border-radius:99px;font-size:.72rem;font-weight:600;background:var(--lowbg);color:var(--low)}
+.tag.HH,.tag.LL,.tag.AA{background:var(--cbg);color:var(--c)}
+.crit{background:var(--cbg);color:var(--c);border-radius:14px;padding:12px 16px;margin-top:24px;font-weight:600;font-size:.88rem}
+.banner{border-radius:14px;padding:14px 18px;margin-top:26px;font-size:.9rem}
+.banner b{display:block;font-size:1rem;margin-bottom:2px}
+.banner.ok{background:var(--okbg);border-left:4px solid var(--okbar);color:var(--ok)}
+.banner.no{background:var(--cbg);border-left:4px solid var(--red);color:var(--c)}
+.valid{background:var(--okbg);border-left:4px solid var(--okbar);border-radius:10px;padding:10px 16px;margin:0;list-style:none;font-weight:600;font-size:.85rem}
+.valid li{color:var(--ok);padding:2px 0}
+.valid li.w{color:var(--w)}
+.valid li.bad{color:var(--c)}
+.valid.hasw{background:var(--wbg);border-left-color:#e3b341}
+.valid.hasbad{background:var(--cbg);border-left-color:var(--red)}
+.err{background:var(--cbg);color:var(--c);border-radius:12px;padding:10px 14px;margin-top:20px;font-weight:500}
+details{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#fff}
+summary{cursor:pointer;padding:10px 14px;font-weight:600;font-size:.84rem;color:var(--lab)}
+pre{margin:0;padding:12px 14px;background:var(--codebg);color:var(--code);border-radius:0 0 14px 14px;font:12px/1.5 Consolas,"Courier New",monospace;overflow:auto;max-height:340px}
+.pair{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.pill{background:var(--codebg);border-radius:99px;padding:3px 12px;font-size:.78rem;color:var(--code)}
+.note{font-size:.76rem;color:var(--mute);margin-top:14px;text-align:center}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--lab);text-decoration:underline;cursor:pointer;font-size:.78rem}
+.foot{text-align:center;color:var(--mute);font-size:.76rem;padding:6px 16px 28px;position:relative;z-index:1}
+.foot b{color:var(--lab);font-weight:600}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span><span class="dot d4"></span>
+<main>
+ <div class="card">
+  <h1>UniHL7</h1>
+  <p class="sub">One engine and a small profile per sender normalize different HL7 v2 dialects into one canonical model, link patients across systems and produce FHIR R4.</p>
+  <label for="file">Upload HL7 File</label>
+  <input id="file" type="file" accept=".hl7,.txt,.er7,text/plain">
+  <label for="input">Paste HL7 Message</label>
+  <textarea id="input" spellcheck="false" placeholder="Paste HL7 message here..."></textarea>
+  <label>Or load a sample: the same fictional patient from three systems</label>
+  <div class="chips" id="chips"></div>
+  <p class="hint">Normalize all three in a row and the patient index merges them into one person.</p>
+  <div class="btns"><button class="btn go" id="go">Normalize Message</button><button class="btn clr" id="clear">Clear</button></div>
+  <div id="out" aria-live="polite"></div>
+  <p class="note">Runs entirely in your browser; nothing is uploaded. The patient index lives only in this tab. Do not paste real patient data into any website.</p>
+ </div>
+</main>
+<div class="foot">UniHL7 • Developed by <b>Rayah Mishal Almutairi</b></div>
+
+<script id="data">
+const PROFILES = {
+ "default": {
+  "description": "Standard HL7 v2 (used when the sender is unknown)",
+  "mrn": "PID-3.1",
+  "mrn_authority": "PID-3.4",
+  "national_id": "PID-19.1",
+  "name": "PID-5",
+  "name_format": "xpn",
+  "dob": "PID-7",
+  "dob_format": "hl7",
+  "sex": "PID-8",
+  "sex_map": {
+   "M": "male",
+   "F": "female",
+   "O": "other",
+   "U": "unknown"
+  },
+  "class_map": {
+   "I": "I",
+   "O": "O",
+   "E": "E",
+   "P": "P"
+  }
+ },
+ "HOSP_A": {
+  "description": "Hospital A - standard HL7 v2.5.1",
+  "match": {
+   "MSH-4": "HOSP_A"
+  },
+  "mrn": "PID-3.1",
+  "mrn_authority": "PID-3.4",
+  "national_id": "PID-3.1@NI",
+  "name": "PID-5",
+  "name_format": "xpn",
+  "dob": "PID-7",
+  "dob_format": "hl7",
+  "sex": "PID-8",
+  "sex_map": {
+   "M": "male",
+   "F": "female",
+   "O": "other",
+   "U": "unknown"
+  },
+  "class_map": {
+   "I": "I",
+   "O": "O",
+   "E": "E",
+   "P": "P"
+  }
+ },
+ "HOSP_B": {
+  "description": "Hospital B - custom delimiters, MRN in PID-2, 'Family, Given' names, DD/MM/YYYY dates, numeric sex codes, national ID in a Z-segment",
+  "match": {
+   "MSH-4": "HOSP_B"
+  },
+  "mrn": "PID-2.1",
+  "mrn_authority": "HOSP_B",
+  "national_id": "ZPI-2.1",
+  "name": "PID-5",
+  "name_format": "family_comma_given",
+  "dob": "PID-7",
+  "dob_format": "dmy_slash",
+  "sex": "PID-8",
+  "sex_map": {
+   "1": "male",
+   "2": "female",
+   "9": "unknown"
+  },
+  "class_map": {
+   "IP": "I",
+   "OP": "O",
+   "ER": "E"
+  }
+ },
+ "LAB_C": {
+  "match": {
+   "MSH-4": "LAB_C"
+  },
+  "description": "Laboratory C - upper-case 'GIVEN FAMILY' names, timestamps with timezone, sex as words",
+  "mrn": "PID-3.1",
+  "mrn_authority": "PID-3.4",
+  "national_id": "PID-19.1",
+  "name": "PID-5",
+  "name_format": "given_family_upper",
+  "dob": "PID-7",
+  "dob_format": "hl7",
+  "sex": "PID-8",
+  "sex_map": {
+   "male": "male",
+   "female": "female",
+   "unknown": "unknown"
+  },
+  "class_map": {
+   "I": "I",
+   "O": "O",
+   "E": "E"
+  }
+ }
+};
+const SAMPLES = {
+ "hospital_a_standard": "MSH|^~\\&|HIS_A|HOSP_A|UNIHL7|HUB|202610040800||ADT^A01^ADT_A01|A001|P|2.5.1\rPID|1||10001^^^HOSP_A^MR~784000000000^^^NATIONAL^NI||Doe^Jane^Marie||19900214|F\rPV1|1|I|ICU^Room 3^Bed 2||||||||||||||||V9001^^^HOSP_A|||||||||||||||||||||||||202610040800",
+ "hospital_b_custom": "MSH#$~\\&#REG_B#HOSP_B#UNIHL7#HUB#20261004093000##ADT$A04#B777#P#2.3\rPID#1#B-7788###Doe, Jane Marie##14/02/1990#2\rZPI#1#784000000000\rPV1#1#OP#Clinic 2################B-V-55#########################20261004093000",
+ "lab_c_results": "MSH|^~\\&|LIS_C|LAB_C|UNIHL7|HUB|20261004101500||ORU^R01^ORU_R01|C555|P|2.4\rPID|1||C-55^^^LAB_C^PI||JANE MARIE DOE||19900214000000+0300|female|||||||||||784000000000\rPV1|1|O|LAB||||||||||||||||C-V-9\rOBR|1|||BMP^Basic metabolic panel^L\rOBX|1|NM|2951-2^Sodium^LN||128|mmol/L||L|||F\rOBX|2|NM|2823-3^Potassium^LN||6.8|mmol/L||HH|||F",
+ "hospital_b_bad": "MSH#$~\\&#REG_B#HOSP_B#UNIHL7#HUB#20261004100000##ADT$A01#B778#P#2.3\rPID#1####Roe, Sam##31/02/1985#7\rPV1#1#XX#Ward 1"
+};
+const SAMPLE_ORDER = [["hospital_a_standard", "Hospital A (standard v2.5.1)", false], ["hospital_b_custom", "Hospital B (custom delimiters)", false], ["lab_c_results", "Lab C (results)", false], ["hospital_b_bad", "Broken message", true]];
+</script>
+<script id="core">
+const UUID_NS="0f5a7c1e-6a62-4a53-9c1d-2d6f4b1d9e11";
+const CLASS_FHIR={I:["IMP","inpatient encounter"],O:["AMB","ambulatory"],E:["EMER","emergency"],P:["PRENC","pre-admission"]};
+const FLAG_FHIR={N:["N","Normal"],L:["L","Low"],H:["H","High"],LL:["LL","Critical low"],HH:["HH","Critical high"],A:["A","Abnormal"],AA:["AA","Critical abnormal"]};
+const OBS_STATUS={F:"final",P:"preliminary",C:"corrected",X:"cancelled"};
+const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+const lookup=(o,k)=>has(o,k)?o[k]:undefined;
+
+class NormalizeError extends Error{constructor(problems){super(problems.join("; "));this.problems=problems;}}
+
+// ---- SHA-1 and UUIDv5 (synchronous, so ids match the Python engine exactly) ----
+function sha1(bytes){
+  const rol=(n,s)=>(n<<s)|(n>>>(32-s));
+  const ml=bytes.length, padLen=((ml+9+63)>>6)<<6, buf=new Uint8Array(padLen);
+  buf.set(bytes); buf[ml]=0x80;
+  const dv=new DataView(buf.buffer); dv.setUint32(padLen-8,Math.floor(ml*8/0x100000000)); dv.setUint32(padLen-4,(ml*8)>>>0);
+  let h0=0x67452301,h1=0xEFCDAB89,h2=0x98BADCFE,h3=0x10325476,h4=0xC3D2E1F0; const w=new Array(80);
+  for(let o=0;o<padLen;o+=64){
+    for(let i=0;i<16;i++) w[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<80;i++) w[i]=rol(w[i-3]^w[i-8]^w[i-14]^w[i-16],1);
+    let a=h0,b=h1,c=h2,d=h3,e=h4;
+    for(let i=0;i<80;i++){
+      let f,k;
+      if(i<20){f=(b&c)|(~b&d);k=0x5A827999;} else if(i<40){f=b^c^d;k=0x6ED9EBA1;}
+      else if(i<60){f=(b&c)|(b&d)|(c&d);k=0x8F1BBCDC;} else {f=b^c^d;k=0xCA62C1D6;}
+      const t=(rol(a,5)+f+e+k+w[i])>>>0; e=d;d=c;c=rol(b,30)>>>0;b=a;a=t;
+    }
+    h0=(h0+a)>>>0;h1=(h1+b)>>>0;h2=(h2+c)>>>0;h3=(h3+d)>>>0;h4=(h4+e)>>>0;
+  }
+  const out=new Uint8Array(20), ov=new DataView(out.buffer); [h0,h1,h2,h3,h4].forEach((v,i)=>ov.setUint32(i*4,v));
+  return out;
+}
+function utf8(s){return new TextEncoder().encode(s);}
+function uuid5(ns,name){
+  const nb=new Uint8Array(16); ns.replace(/-/g,"").match(/../g).forEach((x,i)=>nb[i]=parseInt(x,16));
+  const nm=utf8(name), all=new Uint8Array(16+nm.length); all.set(nb); all.set(nm,16);
+  const h=sha1(all).slice(0,16); h[6]=(h[6]&0x0f)|0x50; h[8]=(h[8]&0x3f)|0x80;
+  const x=[...h].map(b=>b.toString(16).padStart(2,"0")).join("");
+  return `${x.slice(0,8)}-${x.slice(8,12)}-${x.slice(12,16)}-${x.slice(16,20)}-${x.slice(20)}`;
+}
+
+// ---- Parsing: delimiters are read from the message ----
+const escRe=s=>s.replace(/[\\^$*+?.()|[\]{}]/g,"\\$&");
+class Message{
+  constructor(text){
+    const t=text.replace(/^[\s\x0b\x1c]+|[\s\x0b\x1c]+$/g,"");
+    const lines=t.split(/\r\n|\r|\n/).filter(l=>l.trim());
+    if(!lines.length||!lines[0].startsWith("MSH")||lines[0].length<8) throw new NormalizeError(["not an HL7 v2 message (must start with MSH)"]);
+    const f=lines[0][3], chars=lines[0].split(f)[1];
+    if(chars.length<4) throw new NormalizeError(["MSH-2 encoding characters incomplete"]);
+    this.f=f;this.c=chars[0];this.r=chars[1];this.e=chars[2];this.s=chars[3];
+    this.segs=lines.map(l=>{const p=l.split(f);return [p[0],p];});
+  }
+  _field(seg,n){
+    const hit=this.segs.find(s=>s[0]===seg); if(!hit) return null;
+    const i=seg==="MSH"?n-1:n; return i>=0&&i<hit[1].length?hit[1][i]:"";
+  }
+  get(path,def=""){
+    let want="";
+    const at=path.indexOf("@"); if(at>=0){want=path.slice(at+1);path=path.slice(0,at);}
+    const dash=path.indexOf("-"), seg=path.slice(0,dash), rest=path.slice(dash+1);
+    const dot=rest.indexOf("."), num=dot>=0?rest.slice(0,dot):rest, comp=dot>=0?rest.slice(dot+1):"";
+    const raw=this._field(seg,parseInt(num,10)); if(raw===null) return def;
+    for(const rep of raw.split(this.r)){
+      const comps=rep.split(this.c);
+      if(want&&(comps.length>4?comps[4]:"")!==want) continue;
+      const value=comp?(comps.length>=parseInt(comp,10)?comps[parseInt(comp,10)-1]:""):rep;
+      return this.unescape(value.trim());
+    }
+    return def;
+  }
+  unescape(t){
+    const table={F:this.f,S:this.c,T:this.s,R:this.r,E:this.e}, e=escRe(this.e);
+    return t.replace(new RegExp(e+"([FSTRE])"+e,"g"),(_,k)=>table[k]);
+  }
+  segments(name){return this.segs.filter(s=>s[0]===name).map(s=>s[1]);}
+}
+
+// ---- Normalization ----
+function pickProfile(msg,profiles){
+  for(const [name,prof] of Object.entries(profiles)){
+    const m=prof.match;
+    if(m&&Object.entries(m).every(([k,v])=>msg.get(k)===v)) return [name,prof];
+  }
+  return ["default",profiles.default];
+}
+function validYMD(y,m,d){const dt=new Date(Date.UTC(2000,0,1));dt.setUTCFullYear(y,m-1,d);return y>=1&&m>=1&&m<=12&&d>=1&&dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d;}
+const p2=n=>String(n).padStart(2,"0"), p4=n=>String(n).padStart(4,"0");
+function parseDate(value,fmt){
+  value=value.trim();
+  if(fmt==="dmy_slash"){
+    const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value); if(!m) return null;
+    const d=+m[1],mo=+m[2],y=+m[3]; return validYMD(y,mo,d)?`${p4(y)}-${p2(mo)}-${p2(d)}`:null;
+  }
+  const m=/^(\d{4})(\d{2})(\d{2})/.exec(value); if(!m) return null;
+  const y=+m[1],mo=+m[2],d=+m[3]; return validYMD(y,mo,d)?`${p4(y)}-${p2(mo)}-${p2(d)}`:null;
+}
+function parseTs(value){
+  const m=/^(\d{4})(\d{2})(\d{2})(?:(\d{2})(\d{2})(\d{2})?)?(?:\.\d+)?([+-]\d{4})?$/.exec(value.trim()); if(!m) return null;
+  const [,y,mo,d,h,mi,s,tz]=m;
+  if(!validYMD(+y,+mo,+d)||(h!==undefined&&(+h>23||+mi>59||(s!==undefined&&+s>59)))) return null;
+  if(h===undefined) return `${y}-${mo}-${d}`;
+  return `${y}-${mo}-${d}T${h}:${mi}:${s||"00"}`+(tz?`${tz.slice(0,3)}:${tz.slice(3)}`:"+03:00");
+}
+const title=s=>s.replace(/\p{L}+/gu,w=>w[0].toUpperCase()+w.slice(1).toLowerCase());
+function parseName(raw,fmt){
+  raw=raw.trim();
+  if(fmt==="family_comma_given"){
+    const i=raw.indexOf(","), family=i>=0?raw.slice(0,i):raw, given=i>=0?raw.slice(i+1):"";
+    return [title(family.trim()),given.split(/\s+/).filter(Boolean)];
+  }
+  const words=title(raw).split(/\s+/).filter(Boolean);
+  return words.length?[words[words.length-1],words.slice(0,-1)]:["",[]];
+}
+function normalize(text,profiles){
+  const msg=new Message(text), [pname,prof]=pickProfile(msg,profiles), problems=[], notes=[];
+  if(pname==="default") notes.push(`unknown sender '${msg.get("MSH-4")}': standard HL7 profile used`);
+  const mtype=msg.get("MSH-9.1")+"^"+msg.get("MSH-9.2");
+  if(!["ADT","ORU"].includes(mtype.split("^")[0])) problems.push(`message type ${mtype} is not supported (ADT and ORU only)`);
+
+  const mrn=msg.get(prof.mrn), nid=prof.national_id?msg.get(prof.national_id,""):"";
+  if(!mrn) problems.push(`patient identifier missing (${prof.mrn})`);
+  let family,given;
+  if(prof.name_format==="xpn"){
+    family=msg.get(prof.name+".1"); given=[msg.get(prof.name+".2"),msg.get(prof.name+".3")].filter(Boolean);
+  } else [family,given]=parseName(msg.get(prof.name),prof.name_format);
+  if(!family) problems.push(`patient name missing (${prof.name})`);
+  const dobRaw=msg.get(prof.dob), dob=dobRaw?parseDate(dobRaw,prof.dob_format):null;
+  if(dobRaw&&!dob) problems.push(`date of birth '${dobRaw}' is not a valid ${prof.dob_format} date (${prof.dob})`);
+  const sexRaw=msg.get(prof.sex);
+  const sex=lookup(prof.sex_map,sexRaw)||lookup(prof.sex_map,sexRaw.toLowerCase())||lookup(prof.sex_map,sexRaw.toUpperCase());
+  if(sexRaw&&!sex) notes.push(`${prof.sex} value '${sexRaw}' has no mapping - left unknown`);
+  const canonical={
+    source:{profile:pname,facility:msg.get("MSH-4"),controlId:msg.get("MSH-10"),messageType:mtype.replace(/^\^+|\^+$/g,"")},
+    patient:{mrn,mrnSystem:(/^[A-Z]{3}-\d/.test(prof.mrn_authority)?msg.get(prof.mrn_authority):prof.mrn_authority)||pname,
+      nationalId:nid,family,given:given||[],birthDate:dob,sex:sex||"unknown"},
+    encounter:null,observations:[]};
+
+  if(msg.segments("PV1").length){
+    const clsRaw=msg.get("PV1-2"), cls=lookup(prof.class_map,clsRaw)||lookup(prof.class_map,clsRaw.toUpperCase());
+    if(!cls) problems.push(`patient class '${clsRaw}' has no mapping (PV1-2)`);
+    const start=msg.get("PV1-44"), end=msg.get("PV1-45");
+    for(const [label,v] of [["PV1-44",start],["PV1-45",end]]) if(v&&!parseTs(v)) problems.push(`${label} '${v}' is not a valid timestamp`);
+    canonical.encounter={class:cls,location:msg.get("PV1-3").split(msg.c).join(" / "),visit:msg.get("PV1-19.1")||msg.get("PV1-19"),
+      start:start?parseTs(start):null,end:end?parseTs(end):null};
+  }
+  for(const p of msg.segments("OBX")){
+    const fld=(i,c=null)=>{
+      if(i>=p.length) return "";
+      const v=p[i].split(msg.r)[0];
+      if(c===null) return msg.unescape(v);
+      const comps=v.split(msg.c); return comps.length>=c?msg.unescape(comps[c-1]):"";
+    };
+    const flag=fld(8,1);
+    if(flag&&!has(FLAG_FHIR,flag)) notes.push(`OBX-8 flag '${flag}' ignored`);
+    const o={code:fld(3,1),display:fld(3,2),system:fld(3,3),valueType:fld(2),value:fld(5),units:fld(6,1),
+      flag:has(FLAG_FHIR,flag)?flag:"",status:lookup(OBS_STATUS,fld(11))||"final"};
+    canonical.observations.push(o);
+    if(o.valueType==="NM"&&!/^[+-]?\d*\.?\d+$/.test(fld(5))) problems.push(`OBX result '${fld(5)}' for ${fld(3,2)||fld(3,1)} is not numeric`);
+  }
+  if(problems.length) throw new NormalizeError(problems);
+  return [canonical,notes];
+}
+
+// ---- Patient index ----
+class MasterIndex{
+  constructor(){this.people=new Map();}
+  static key(p){
+    if(p.nationalId) return "nid:"+p.nationalId;
+    return "demo:"+[p.family.toLowerCase(),p.given.join(" ").toLowerCase(),p.birthDate||""].join("|");
+  }
+  link(p){
+    const k=MasterIndex.key(p);
+    if(!this.people.has(k)) this.people.set(k,{id:uuid5(UUID_NS,k),identifiers:new Map(),messages:0});
+    const person=this.people.get(k);
+    person.identifiers.set(p.mrnSystem+"\u0000"+p.mrn,[p.mrnSystem,p.mrn]); person.messages++;
+    person.name=[p.given[0]||"",p.family].filter(Boolean).join(" "); person.birthDate=p.birthDate; person.sex=p.sex;
+    return person;
+  }
+}
+
+// ---- Canonical -> FHIR R4 ----
+function toFhir(canonical,person){
+  const p=canonical.patient;
+  const patient={resourceType:"Patient",id:person.id,
+    identifier:[...person.identifiers.values()].map(([s,v])=>({system:"urn:unihl7:"+s.toLowerCase(),value:v,
+      type:{coding:[{system:"http://terminology.hl7.org/CodeSystem/v2-0203",code:"MR"}]}})),
+    name:[{family:p.family,given:p.given}],gender:p.sex};
+  if(p.nationalId) patient.identifier.push({system:"urn:unihl7:national-id",value:p.nationalId});
+  if(p.birthDate) patient.birthDate=p.birthDate;
+  const entries=[patient], ref={reference:"Patient/"+person.id}, enc=canonical.encounter; let encId=null;
+  if(enc){
+    const [code,display]=CLASS_FHIR[enc.class];
+    encId=uuid5(UUID_NS,`enc|${canonical.source.facility}|${enc.visit||canonical.source.controlId}`);
+    const e={resourceType:"Encounter",id:encId,status:enc.end?"finished":"in-progress",
+      class:{system:"http://terminology.hl7.org/CodeSystem/v3-ActCode",code,display},subject:ref};
+    if(enc.start||enc.end){e.period={};if(enc.start)e.period.start=enc.start;if(enc.end)e.period.end=enc.end;}
+    if(enc.location) e.location=[{location:{display:enc.location}}];
+    entries.push(e);
+  }
+  canonical.observations.forEach((o,i)=>{
+    const coding={code:o.code,display:o.display||o.code};
+    if(["LN","LOINC"].includes(o.system)) coding.system="http://loinc.org";
+    const obs={resourceType:"Observation",status:o.status,id:uuid5(UUID_NS,`obs|${canonical.source.controlId}|${i}`),code:{coding:[coding]},subject:ref};
+    if(encId) obs.encounter={reference:"Encounter/"+encId};
+    if(o.valueType==="NM") obs.valueQuantity={value:parseFloat(o.value),unit:o.units}; else obs.valueString=o.value;
+    if(o.flag){const [c,d]=FLAG_FHIR[o.flag];obs.interpretation=[{coding:[{system:"http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",code:c,display:d}]}];}
+    entries.push(obs);
+  });
+  return {resourceType:"Bundle",type:"collection",entry:entries.map(r=>({fullUrl:"urn:uuid:"+r.id,resource:r}))};
+}
+
+// ---- Gateway: normalize -> link -> FHIR, with counters ----
+class Gateway{
+  constructor(profiles){this.profiles=profiles;this.index=new MasterIndex();this.stats={received:0,accepted:0,rejected:0,byProfile:{}};}
+  process(text){
+    this.stats.received++;
+    let canonical,notes;
+    try{[canonical,notes]=normalize(text,this.profiles);}
+    catch(exc){
+      if(!(exc instanceof NormalizeError)) throw exc;
+      this.stats.rejected++;
+      let cid=""; try{cid=new Message(text).get("MSH-10");}catch(_){}
+      return [false,{controlId:cid,problems:exc.problems},null];
+    }
+    const person=this.index.link(canonical.patient), bundle=toFhir(canonical,person);
+    this.stats.accepted++; const prof=canonical.source.profile;
+    this.stats.byProfile[prof]=(this.stats.byProfile[prof]||0)+1;
+    return [true,{controlId:canonical.source.controlId,profile:prof,notes,patientId:person.id,canonical},bundle];
+  }
+}
+if(typeof module!=="undefined") module.exports={Message,NormalizeError,normalize,parseTs,parseDate,uuid5,MasterIndex,toFhir,Gateway,PROFILES:typeof PROFILES!=="undefined"?PROFILES:null,SAMPLES:typeof SAMPLES!=="undefined"?SAMPLES:null};
+</script>
+<script id="ui">
+(function(){
+if(typeof document==="undefined"||!document.getElementById("go")) return;
+const $=id=>document.getElementById(id), input=$("input"), out=$("out");
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const CLASS_LABEL={I:"Inpatient",O:"Outpatient",E:"Emergency",P:"Pre-admission"};
+const SEX_LABEL={male:"Male",female:"Female",other:"Other",unknown:"Unknown"};
+const FLAG_LABEL={N:"Normal",L:"Low",H:"High",LL:"Critically low",HH:"Critically high",A:"Abnormal",AA:"Critically abnormal"};
+let gw=new Gateway(PROFILES), shown=0;
+
+const chips=$("chips");
+SAMPLE_ORDER.forEach(([key,label,bad])=>{
+  const b=document.createElement("button"); b.type="button"; b.className="chip"+(bad?" badc":""); b.textContent=label;
+  b.onclick=()=>{input.value=SAMPLES[key].replace(/\r/g,"\n");};
+  chips.appendChild(b);
+});
+$("file").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{input.value=String(r.result).replace(/\r\n|\r/g,"\n");}; r.readAsText(f);
+});
+const kv=rows=>{rows=rows.filter(r=>r[1]!==""&&r[1]!=null);return rows.length?'<div class="scroll"><table class="kv">'+rows.map(r=>`<tr><th>${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join("")+"</table></div>":"";};
+const tbl=(head,rows)=>`<div class="scroll"><table><tr>${head.map(h=>`<th>${esc(h)}</th>`).join("")}</tr>${rows.join("")}</table></div>`;
+
+function indexHtml(){
+  const people=[...gw.index.people.values()]; if(!people.length) return "";
+  const rows=people.map(p=>`<tr><td>${esc(p.id.slice(0,8))}</td><td>${esc(p.name)}</td><td>${esc(p.birthDate||"")}</td><td>${[...p.identifiers.values()].map(([s,v])=>`<span class="pill">${esc(s)}: ${esc(v)}</span>`).join(" ")}</td><td>${p.messages}</td></tr>`);
+  return `<h2>Patient Index</h2>${tbl(["Unified ID","Patient","Born","Identifiers from each system","Messages"],rows)}
+   <p class="hint">${people.length} unified patient${people.length===1?"":"s"} from ${gw.stats.accepted} accepted message${gw.stats.accepted===1?"":"s"}${gw.stats.rejected?`, ${gw.stats.rejected} rejected`:""}. <button type="button" class="linkbtn" id="reset">Reset index</button></p>`;
+}
+function wireReset(){const r=$("reset");if(r) r.onclick=()=>{gw=new Gateway(PROFILES);out.innerHTML="";};}
+
+function run(){
+  const text=input.value;
+  if(!text.trim()){out.innerHTML='<div class="err">Paste an HL7 message, upload a file or pick a sample first.</div>';return;}
+  let res; try{res=gw.process(text);}catch(e){out.innerHTML=`<div class="err">${esc(e.message)}</div>`;return;}
+  const [ok,info,bundle]=res; let h="";
+  if(!ok){
+    h+=`<div class="banner no"><b>Rejected (ACK AE${info.controlId?" for "+esc(info.controlId):""})</b>The message was not converted. Every problem found is listed below; nothing is half-converted.</div>`;
+    h+=`<h2>Validation Report</h2><ul class="valid hasbad">${info.problems.map(p=>`<li class="bad">✗ ${esc(p)}</li>`).join("")}</ul>`;
+    out.innerHTML=h+indexHtml(); wireReset(); out.scrollIntoView({behavior:"smooth",block:"start"}); return;
+  }
+  const c=info.canonical, p=c.patient, prof=PROFILES[c.source.profile], enc=c.encounter;
+  h+=`<div class="banner ok"><b>Accepted (ACK AA for ${esc(info.controlId)})</b>Read as dialect <b style="display:inline">${esc(c.source.profile)}</b>: ${esc(prof.description)}</div>`;
+  h+="<h2>Message</h2>"+kv([["Type",c.source.messageType],["Sender facility",c.source.facility],["Control ID",c.source.controlId]]);
+  h+="<h2>Patient Information</h2>"+kv([["Name",[p.given.join(" "),p.family].filter(Boolean).join(" ")],["Date of Birth",p.birthDate||""],["Sex",SEX_LABEL[p.sex]||p.sex],
+    ["MRN",`${p.mrn} (${p.mrnSystem})`],["National ID",p.nationalId],["Unified Patient ID",info.patientId]]);
+  if(enc) h+="<h2>Visit Information</h2>"+kv([["Patient Class",CLASS_LABEL[enc.class]||enc.class],["Assigned Location",enc.location],["Visit Number",enc.visit],["Start",enc.start||""],["End",enc.end||""]]);
+  const crit=c.observations.filter(o=>["HH","LL","AA"].includes(o.flag));
+  if(crit.length) h+=`<div class="crit">Critical results: ${crit.map(o=>esc((o.display||o.code)+" "+o.value+" "+o.units)).join("; ")}</div>`;
+  if(c.observations.length) h+="<h2>Observations</h2>"+tbl(["Observation","Value","Units","Code"],c.observations.map(o=>`<tr><td>${esc(o.display||o.code)}</td><td>${esc(o.value)}${o.flag&&o.flag!=="N"?`<span class="tag ${esc(o.flag)}">${esc(FLAG_LABEL[o.flag])}</span>`:""}</td><td>${esc(o.units)}</td><td>${esc(o.code)}${o.system?" ("+esc(o.system)+")":""}</td></tr>`));
+  const checks=[`Sender recognised: profile ${c.source.profile}`,"Patient identifier, name and birth date valid"];
+  if(enc) checks.push("Visit class and timestamps valid");
+  if(c.observations.length) checks.push(`${c.observations.length} observation${c.observations.length===1?"":"s"} converted`);
+  h+=`<h2>Validation Report</h2><ul class="valid${info.notes.length?" hasw":""}">${checks.map(x=>`<li>✓ ${esc(x)}</li>`).join("")}${info.notes.map(n=>`<li class="w">! ${esc(n)}</li>`).join("")}</ul>`;
+  const kinds=bundle.entry.map(e=>e.resource.resourceType), uniq=[...new Set(kinds)];
+  h+=`<h2>FHIR R4 Bundle</h2><div class="pair">${uniq.map(k=>`<span class="pill">${esc(k)} × ${kinds.filter(x=>x===k).length}</span>`).join("")}</div>
+   <details><summary>View FHIR JSON</summary><pre>${esc(JSON.stringify(bundle,null,2))}</pre></details>
+   <details><summary>Profile used for ${esc(c.source.profile)} (the only thing that differs per sender)</summary><pre>${esc(JSON.stringify(prof,null,2))}</pre></details>`;
+  out.innerHTML=h+indexHtml(); wireReset(); out.scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("go").onclick=run;
+$("clear").onclick=()=>{input.value="";out.innerHTML="";$("file").value="";};
+})();
+</script>
+</body>
+</html>

@@ -20,6 +20,21 @@ flowchart LR
   F --> P[Master patient index<br/>one person, many identifiers]
 ```
 
+## Try it in the browser
+
+**Live demo:** https://rayahmishal.github.io/unihl7/ (or open `index.html` locally; no install, nothing is uploaded).
+
+Pick the three samples in turn and press *Normalize Message*: each is read with its own profile, shown as the
+same canonical patient, converted to a FHIR R4 bundle, and merged into one entry in the patient index.
+The broken sample is rejected with every problem listed.
+
+| Merged result | Rejected message |
+|---|---|
+| ![One patient from three systems](screenshot-results.png) | ![Broken message rejected with all problems](screenshot-rejected.png) |
+
+The page is a port of the Python engine to JavaScript. `test_index.js` runs both engines on the same messages
+and checks that the canonical models, FHIR bundles and ids are identical.
+
 ## What the demo proves
 
 The same fake patient arrives from three systems in three different formats:
@@ -74,12 +89,13 @@ Add a profile to `profiles.json`. No engine code changes:
 python unihl7.py samples            # normalize the multi-dialect samples
 python mllp.py demo                 # real-time demo
 python -m unittest test_unihl7 -v   # 8 tests, including a live MLLP round trip
+node test_index.js                  # browser engine gives identical results to the Python engine
 ```
 
 ## Files
 
 `unihl7.py` engine · `profiles.json` dialect profiles · `mllp.py` MLLP listener and client ·
-`test_unihl7.py` tests
+`index.html` browser demo (same engine in JavaScript) · `test_unihl7.py` and `test_index.js` tests
 
 ## Limits
 
