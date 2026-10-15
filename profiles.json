@@ -1,0 +1,38 @@
+{
+  "_comment": "One profile per sending system ('dialect'). A profile only says WHERE each canonical field lives and HOW it is written; the engine in unihl7.py never changes. Path syntax: SEGMENT-field.component",
+  "default": {
+    "description": "Standard HL7 v2 (used when the sender is unknown)",
+    "mrn": "PID-3.1", "mrn_authority": "PID-3.4", "national_id": "PID-19.1",
+    "name": "PID-5", "name_format": "xpn",
+    "dob": "PID-7", "dob_format": "hl7",
+    "sex": "PID-8", "sex_map": {"M": "male", "F": "female", "O": "other", "U": "unknown"},
+    "class_map": {"I": "I", "O": "O", "E": "E", "P": "P"}
+  },
+  "HOSP_A": {
+    "description": "Hospital A - standard HL7 v2.5.1",
+    "match": {"MSH-4": "HOSP_A"},
+    "mrn": "PID-3.1", "mrn_authority": "PID-3.4", "national_id": "PID-3.1@NI",
+    "name": "PID-5", "name_format": "xpn",
+    "dob": "PID-7", "dob_format": "hl7",
+    "sex": "PID-8", "sex_map": {"M": "male", "F": "female", "O": "other", "U": "unknown"},
+    "class_map": {"I": "I", "O": "O", "E": "E", "P": "P"}
+  },
+  "HOSP_B": {
+    "description": "Hospital B - custom delimiters, MRN in PID-2, 'Family, Given' names, DD/MM/YYYY dates, numeric sex codes, national ID in a Z-segment",
+    "match": {"MSH-4": "HOSP_B"},
+    "mrn": "PID-2.1", "mrn_authority": "HOSP_B", "national_id": "ZPI-2.1",
+    "name": "PID-5", "name_format": "family_comma_given",
+    "dob": "PID-7", "dob_format": "dmy_slash",
+    "sex": "PID-8", "sex_map": {"1": "male", "2": "female", "9": "unknown"},
+    "class_map": {"IP": "I", "OP": "O", "ER": "E"}
+  },
+  "LAB_C": {
+    "match": {"MSH-4": "LAB_C"},
+    "description": "Laboratory C - upper-case 'GIVEN FAMILY' names, timestamps with timezone, sex as words",
+    "mrn": "PID-3.1", "mrn_authority": "PID-3.4", "national_id": "PID-19.1",
+    "name": "PID-5", "name_format": "given_family_upper",
+    "dob": "PID-7", "dob_format": "hl7",
+    "sex": "PID-8", "sex_map": {"male": "male", "female": "female", "unknown": "unknown"},
+    "class_map": {"I": "I", "O": "O", "E": "E"}
+  }
+}
